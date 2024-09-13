@@ -2,10 +2,82 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter/rendering.dart';
 import 'package:chargergogo/locations.dart' as locations;
+import 'package:chargergogo/search.dart' as search_bar;
 
 void main() {
   debugPaintSizeEnabled = false;
   runApp(const MyApp());
+}
+
+List<TimeOfDay>? parseTimeRange(String timeRange) {
+  // Split the string by '-'
+  final parts = timeRange.split('-');
+  if (parts.length != 2) {
+    return null; // Invalid format
+  }
+
+  // Parse start and end times
+  final startTime = _parseTimeOfDay(parts[0]);
+  final endTime = _parseTimeOfDay(parts[1]);
+
+  if (startTime != null && endTime != null) {
+    return [startTime, endTime];
+  }
+
+  return null; // If parsing failed
+}
+
+TimeOfDay? _parseTimeOfDay(String time) {
+  final parts = time.split(':');
+  if (parts.length != 2) {
+    return null; // Invalid format
+  }
+
+  // Convert parts to integers
+  final hour = int.tryParse(parts[0]);
+  final minute = int.tryParse(parts[1]);
+
+  if (hour != null && minute != null) {
+    return TimeOfDay(hour: hour % 24, minute: minute % 60);
+  }
+
+  return null; // If parsing failed
+}
+
+BitmapDescriptor getIconFromTimeRange(String timeRange, BitmapDescriptor icon, BitmapDescriptor transparent_icon){
+  var split = parseTimeRange(timeRange);
+  var currentHour = DateTime.now().hour;
+
+  if (split == null) {
+    return icon;
+  }
+  var openHour = split[0].hour;
+  var closeHour = split[1].hour;
+
+  if (openHour == 0 && closeHour == 0) {
+    return icon;
+  }
+
+  if (currentHour < openHour || currentHour >= closeHour) {
+    return transparent_icon;
+  }
+  return icon;
+}
+
+bool nowInTimeRange(String timeRange) {
+  var split = parseTimeRange(timeRange);
+  var currentHour = DateTime.now().hour;
+
+  if (split == null) {
+    return true;
+  }
+  var openHour = split[0].hour;
+  var closeHour = split[1].hour;
+
+  if (openHour >= currentHour && currentHour >= closeHour) {
+    return false;
+  }
+  return true;
 }
 
 class MyApp extends StatefulWidget {
@@ -15,46 +87,107 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
+class googleMapZoomScrollController with ChangeNotifier {
+  bool zoomEnabled = true;
+  bool scrollEnabled = true;
+
+  void toggleZoom(bool? value) {
+    if (value == null) {
+      zoomEnabled = !zoomEnabled;
+    }
+    else {
+      zoomEnabled = value;
+    }
+    notifyListeners();
+  }
+
+  void toggleScroll(bool? value) {
+    if (value == null) {
+      scrollEnabled = !scrollEnabled;
+    }
+    else {
+      scrollEnabled = value;
+    }
+    notifyListeners();
+  }
+
+  void disableAll() {
+    zoomEnabled = false;
+    scrollEnabled = false;
+    notifyListeners();
+  }
+
+  googleMapZoomScrollController() {
+    zoomEnabled = true;
+    scrollEnabled = true;
+  }
+}
+
 class _MyAppState extends State<MyApp> {
   late GoogleMapController mapController;
 
   final LatLng _center = const LatLng(36.1716, -115.1391);
   // final LatLng _center = const LatLng(56.172249, 10.187372)
-  final Map<String, Marker> _markers = {};
+  final Map<String, Marker> _all_markers = {};
+  final Map<String, Marker> _open_markers = {};
+  Map<String, Marker> current_markers = {};
+  bool searchIsOpen = false;
+  late googleMapZoomScrollController zoomScrollControl = googleMapZoomScrollController();
+
+  // set current time
+  final currentHour = DateTime.now().hour;
+
+  @override
+  void initState() {
+    super.initState();
+    zoomScrollControl = googleMapZoomScrollController();
+  }
 
   Future<void> _onMapCreated(GoogleMapController controller) async {
-    final cggOffices = await locations.getGoogleOffices();
-    // var icon = await BitmapDescriptor.asset(
-    //     const ImageConfiguration(size: Size(48, 48)), 'assets/cgg_logo.png');
+    // final googleOffices = await locations.getGoogleOffices();
+    final cggShops = await locations.getCGGShops();
+
+    var icon = await BitmapDescriptor.asset(
+        const ImageConfiguration(size: Size(60, 60)), 'cgg_logo.png');
+
+    var transparent_icon = await BitmapDescriptor.asset(
+        const ImageConfiguration(size: Size(60, 60)), 'transparent_cgg_logo.png');
+
     setState(() {
-      _markers.clear();
-      for (final office in cggOffices.offices) {
+      _all_markers.clear();
+      _open_markers.clear();
+
+      // cgg stuff
+      for (final shop in cggShops.shops) {
+        var chosenIcon = getIconFromTimeRange(shop.business_hours, icon, transparent_icon);
         final marker = Marker(
-          markerId: MarkerId(office.name),
-          icon: BitmapDescriptor.defaultMarker,
-          // icon: icon,
-          position: LatLng(office.lat, office.lng),
+          markerId: MarkerId(shop.id),
+          icon: chosenIcon,
+          position: LatLng(shop.lat, shop.lng),
           infoWindow: InfoWindow(
-            title: office.name,
-            snippet: office.address,
+            title: shop.id,
+            snippet: shop.business_hours,
           ),
-          onTap: () async {
+        onTap: () async {
             var oldZoom = await mapController.getZoomLevel();
+            // first set camera position to zoom out by 1
             mapController.animateCamera(
               CameraUpdate.newCameraPosition(
                 CameraPosition(
-                  target: LatLng(office.lat, office.lng),
-                  zoom: oldZoom,
+                  target: LatLng(shop.lat, shop.lng),
+                  zoom: 15
                 ),
               ),
             );
           },
         );
-        _markers[office.name] = marker;
+        _all_markers[shop.id] = marker;
+        if (nowInTimeRange(shop.business_hours)) {
+          _open_markers[shop.id] = marker;
+        }
       }
     });
-        
-    mapController = controller;
+    setState(() => mapController = controller);
   }
 
   @override
@@ -75,26 +208,52 @@ class _MyAppState extends State<MyApp> {
   }
 
   Widget cggMapPage() {
+    current_markers = _all_markers;
     // print("marker quantity: ${_markers.length}");
     return Stack(
       children: [
         GoogleMap(
-          onMapCreated: _onMapCreated,
-          initialCameraPosition: CameraPosition(
-            target: _center,
-            zoom: 11.0,
+            scrollGesturesEnabled: !searchIsOpen,
+            onMapCreated: _onMapCreated,
+            initialCameraPosition: CameraPosition(
+              target: _center,
+              zoom: 11.0,
+            ),
+            markers: current_markers.values.toSet(),
           ),
-          markers: _markers.values.toSet(),
-
-        ),
         // center the text at the bottom of the screen
-        const Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          child: Text("testing", textAlign: TextAlign.center),
+        PositionedDirectional(
+          top: 0,
+          end: 0,
+          child: Column(mainAxisSize: MainAxisSize.min,
+          children: [
+            searchBarAndResults(zoomScrollControl)
+          ]),
         ),
       ]
     );
   }
+
+  Widget searchBarAndResults(googleMapZoomScrollController zoomScrollControl) {
+    return Padding( 
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Container(
+          width: 300,
+          child: search_bar.SearchBarAndResultsWidget(
+            onSearchOpen: () {
+              setState(() {
+                print("search is open");
+                searchIsOpen = true;
+              });
+            },
+            onSearchClose: () {
+              print("search is closed");
+              setState(() {
+                searchIsOpen = false;
+              });
+            },
+          )),
+      );
+  }
+
 }

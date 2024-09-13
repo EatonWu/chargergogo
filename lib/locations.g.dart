@@ -145,11 +145,28 @@ Map<String, dynamic> _$CGGShopToJson(CGGShop instance) => <String, dynamic>{
     };
 
 CGGShops _$CGGShopsFromJson(Map<String, dynamic> json) => CGGShops(
-      shops: (json['shops'] as List<dynamic>)
-          .map((e) => CGGShop.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      shops: (json['shops'] as List<dynamic>?)
+              ?.map((e) => CGGShop.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <CGGShop>[],
     );
 
 Map<String, dynamic> _$CGGShopsToJson(CGGShops instance) => <String, dynamic>{
       'shops': instance.shops,
+    };
+
+GetShopAPIResponse _$GetShopAPIResponseFromJson(Map<String, dynamic> json) =>
+    GetShopAPIResponse(
+      ec: (json['ec'] as num).toInt(),
+      em: json['em'] as String,
+      timestamp: (json['timestamp'] as num).toInt(),
+      data: CGGShops.fromJson(json['data'] as Map<String, dynamic>),
+    );
+
+Map<String, dynamic> _$GetShopAPIResponseToJson(GetShopAPIResponse instance) =>
+    <String, dynamic>{
+      'ec': instance.ec,
+      'em': instance.em,
+      'timestamp': instance.timestamp,
+      'data': instance.data,
     };

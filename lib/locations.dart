@@ -198,19 +198,38 @@ class CGGShop {
 @JsonSerializable()
 class CGGShops {
   CGGShops({
-    required this.shops,
+    this.shops = const <CGGShop>[],
   });
 
-  factory CGGShops.fromJson(Map<String, dynamic> json) =>
+  factory CGGShops.fromJson(Map<String, dynamic> json) => 
       _$CGGShopsFromJson(json);
   Map<String, dynamic> toJson() => _$CGGShopsToJson(this);
 
   final List<CGGShop> shops;
 }
 
+@JsonSerializable()
+class GetShopAPIResponse {
+  GetShopAPIResponse({
+    required this.ec,
+    required this.em,
+    required this.timestamp,
+    required this.data,
+  });
+
+  factory GetShopAPIResponse.fromJson(Map<String, dynamic> json) =>
+      _$GetShopAPIResponseFromJson(json);
+  Map<String, dynamic> toJson() => _$GetShopAPIResponseToJson(this);
+
+  final int ec;
+  final String em;
+  final int timestamp;
+  final CGGShops data;
+}
+
+
 Future<CGGShops> getCGGShops() async {
   const cggShopsURL = 'https://api.chargergogo.com/api/v2/nearby/shoplist';
-
   // Retrieve the locations of Google offices
    // build headers
     // curl "https://api.chargergogo.com/api/v2/nearby/shoplist" -X POST -H
@@ -228,26 +247,24 @@ Future<CGGShops> getCGGShops() async {
     // -H "Sec-Fetch-Site: same-site"
     // -H "TE: trailers"
   try {
-    final response = await http.get(Uri.parse(cggShopsURL),
-    headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0",
-      "Accept": "application/json, text/plain, */*",
-      "Accept-Language": "en-US,en;q=0.5",
-      "Accept-Encoding": "gzip, deflate, br, zstd",
-      "Content-Type": "application/x-www-form-urlencoded",
-      "lang": "en",
-      "Origin": "https://app.chargergogo.com",
-      "Connection": "keep-alive",
-      "Referer": "https://app.chargergogo.com/",
-      "Sec-Fetch-Dest": "empty",
-      "Sec-Fetch-Mode": "cors",
-      "Sec-Fetch-Site": "same-site",
-      "TE": "trailers" 
+    final response = await http.post(Uri.parse(cggShopsURL),
+    body: {
+      'lat': '36.096',
+      'lng': '-155.218',
+      'is_usa': '1',
     }
     );
+    // String response = '{"ec":200,"em":"ok","timestamp": 1724815918,"data":{"shops":[{"id":"13113","lat":-8.1191131,"lng":-34.8953107,"business_hours":"0:00-24:00"}]}}';
+    // return GetShopAPIResponse.fromJson(json.decode(response) as Map<String, dynamic>).data;
+    print(response.body);
     if (response.statusCode == 200) {
-      return CGGShops.fromJson(
-          json.decode(response.body) as Map<String, dynamic>);
+      try {
+        var apiResponse = GetShopAPIResponse.fromJson(
+            json.decode(response.body) as Map<String, dynamic>);
+        return apiResponse.data;
+      } catch (e) {
+        print("Failed to decode response body: $e");
+      }
     }
   } catch (e) {
     if (kDebugMode) {
@@ -258,7 +275,7 @@ Future<CGGShops> getCGGShops() async {
   // Fallback for when the above HTTP request fails.
   return CGGShops.fromJson(
     json.decode(
-      await rootBundle.loadString('assets/shops.json'),
+      await rootBundle.loadString('shops.json'),
     ) as Map<String, dynamic>,
   );
 }
