@@ -9,9 +9,8 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class ShopBanner extends StatefulWidget {
-  locations.CGGShopProfile? shopProfile;
-
-  ShopBanner({Key? key, required this.shopProfile}) : super(key: key);
+  ShopBannerController shopBannerController = ShopBannerController();
+  ShopBanner({Key? key, required this.shopBannerController}) : super(key: key);
 
   @override
   _ShopBannerState createState() => _ShopBannerState();
@@ -42,7 +41,9 @@ class _ShopBannerState extends State<ShopBanner> {
       ),
       child: Column(
         children: [
-          Text(widget.shopProfile == null ? "No Shop Selected" : widget.shopProfile!.shop_name),
+          Text(widget.shopBannerController.currentlySelectedShopProfile == null
+           ? "No Shop Selected" :
+           widget.shopBannerController.currentlySelectedShopProfile!.shop_name),
         ],
       ),
     );

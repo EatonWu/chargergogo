@@ -124,8 +124,29 @@ class googleMapZoomScrollController with ChangeNotifier {
   }
 }
 
+class ShopBannerController with ChangeNotifier {
+  locations.CGGShop? currentlySelectedShop; 
+  locations.CGGShopProfile? currentlySelectedShopProfile;
+
+  void setShop(locations.CGGShop shop) {
+    currentlySelectedShop = shop;
+    notifyListeners();
+  }
+
+  void setShopProfile(locations.CGGShopProfile? shopProfile) {
+    currentlySelectedShopProfile = shopProfile;
+    notifyListeners();
+  }
+
+  void clearShopProfile() {
+    currentlySelectedShopProfile = null;
+    notifyListeners();
+  }
+}
+
 class _MyAppState extends State<MyApp> {
   GoogleMapController? mapController;
+  ShopBannerController shopBannerController = ShopBannerController();
 
   final LatLng _center = const LatLng(36.1716, -115.1391);
   // final LatLng _center = const LatLng(56.172249, 10.187372)
@@ -134,8 +155,8 @@ class _MyAppState extends State<MyApp> {
   Map<String, Marker> current_markers = {};
   bool searchIsOpen = false;
   late googleMapZoomScrollController zoomScrollControl = googleMapZoomScrollController();
-  locations.CGGShop? currentlySelectedShop;
-  locations.CGGShopProfile? currentlySelectedShopProfile;
+  // locations.CGGShop? currentlySelectedShop;
+  // locations.CGGShopProfile? currentlySelectedShopProfile;
 
   // set current time
   final currentHour = DateTime.now().hour;
@@ -172,11 +193,11 @@ class _MyAppState extends State<MyApp> {
           //   snippet: shop.business_hours,
           // ),
           onTap: () async {
-            if (currentlySelectedShop == null || currentlySelectedShop?.id != shop.id) {
+            if (shopBannerController.currentlySelectedShop == null || shopBannerController.currentlySelectedShop?.id != shop.id) {
               // print("Currently selected shop: ${currentlySelectedShop?.id}");
               
-              currentlySelectedShop = shop;
-              currentlySelectedShopProfile = await locations.getCGGShopProfile(shop.id);
+              shopBannerController.currentlySelectedShop = shop;
+              shopBannerController.currentlySelectedShopProfile = await locations.getCGGShopProfile(shop.id);
             }
 
             if (mapController != null) {
@@ -249,7 +270,9 @@ class _MyAppState extends State<MyApp> {
           left: 0,
           right: 0,
           child: Center(
-            child: currentlySelectedShopProfile == null ? Text("No Shop Selected") : searchBanner.ShopBanner(shopProfile: currentlySelectedShopProfile!),
+            child: shopBannerController.currentlySelectedShopProfile == null ? 
+            Text("No Shop Selected") : 
+            searchBanner.ShopBanner(shopBannerController: shopBannerController,),
           )
         )
       ]
@@ -275,6 +298,7 @@ class _MyAppState extends State<MyApp> {
               });
             },
             mapController: mapController,
+            shopBannerController: shopBannerController,
           )),
       );
   }

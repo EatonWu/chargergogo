@@ -14,7 +14,15 @@ class SearchBarAndResultsWidget extends StatefulWidget{
   final Function() onSearchOpen;
   final Function() onSearchClose;
   final GoogleMapController mapController;
-  SearchBarAndResultsWidget({Key? key, required this.onSearchOpen, required this.onSearchClose, required this.mapController}) : super(key: key);
+  final ShopBannerController shopBannerController;
+
+  SearchBarAndResultsWidget({
+    Key? key,
+    required this.onSearchOpen,
+    required this.onSearchClose,
+    required this.mapController,
+    required this.shopBannerController
+    }) : super(key: key);
 
 
   @override
@@ -244,18 +252,24 @@ class _SearchBarAndResultsWidgetState extends State<SearchBarAndResultsWidget> {
                           itemBuilder: (context, index) {
                             return SingleResultTile(shop: _searchResults[index],
                               mapController: widget.mapController,
-                              onTap: () {
+                              onTap: () async {
+                                var shop = _searchResults[index];
+                                var shopProfile = await locations.getCGGShopProfile(shop.getShopID());
                                 // print("Tapped on ${_searchResults[index].shop_name}");
                                 if (searchOpen) {
                                   widget.onSearchClose();
                                   searchOpen = false;
                                 }
                                 setState(() {
+                                  // set search text
                                   _searchController.text = _searchResults[index].address;
                                   if (_searchResults.isNotEmpty) {
                                     _tempSearchResults = _searchResults;
                                     _searchResults = [];
                                   }
+
+                                  // set search banner shop
+                                  widget.shopBannerController.setShopProfile(shopProfile);
                                 });
                               }
                             );
