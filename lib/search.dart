@@ -13,7 +13,8 @@ part 'search.g.dart';
 class SearchBarAndResultsWidget extends StatefulWidget{
   final Function() onSearchOpen;
   final Function() onSearchClose;
-  SearchBarAndResultsWidget({Key? key, required this.onSearchOpen, required this.onSearchClose}) : super(key: key);
+  final GoogleMapController mapController;
+  SearchBarAndResultsWidget({Key? key, required this.onSearchOpen, required this.onSearchClose, required this.mapController}) : super(key: key);
 
 
   @override
@@ -117,8 +118,9 @@ Future<CGGSearchData> getSearchQueryResults(String query) async {
 
 class SingleResultTile extends StatelessWidget {
   final CGGSearchShop shop;
+  final GoogleMapController mapController;
   Function()? onTap = () => {};
-  SingleResultTile({super.key, required this.shop, this.onTap});
+  SingleResultTile({super.key, required this.shop, this.onTap, required this.mapController});
 
   // set default for onTap
 
@@ -134,7 +136,14 @@ class SingleResultTile extends StatelessWidget {
           if (onTap != null) {
             onTap!();
           }
-          // Navigate to the details page
+          mapController.animateCamera(
+            CameraUpdate.newCameraPosition(
+              CameraPosition(
+                target: LatLng(shop.lat, shop.lng),
+                zoom: 18
+              ),
+            ),
+          );
         },
       ),
     );
@@ -234,12 +243,21 @@ class _SearchBarAndResultsWidgetState extends State<SearchBarAndResultsWidget> {
                           itemCount: _searchResults.length,
                           itemBuilder: (context, index) {
                             return SingleResultTile(shop: _searchResults[index],
+                              mapController: widget.mapController,
                               onTap: () {
-                                final cameraUpdate = CameraUpdate.newLatLng(
-                                  LatLng(_searchResults[index].lat, _searchResults[index].lng),
-                                );
-                                // Navigate to the details page
-                              },
+                                // print("Tapped on ${_searchResults[index].shop_name}");
+                                if (searchOpen) {
+                                  widget.onSearchClose();
+                                  searchOpen = false;
+                                }
+                                setState(() {
+                                  _searchController.text = _searchResults[index].address;
+                                  if (_searchResults.isNotEmpty) {
+                                    _tempSearchResults = _searchResults;
+                                    _searchResults = [];
+                                  }
+                                });
+                              }
                             );
                           },
                         ),

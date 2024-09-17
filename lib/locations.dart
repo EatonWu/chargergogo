@@ -133,15 +133,37 @@ class CGGShopProfile {
   final String image_l;
   final String address;
   final String business_hours;
-  final String open_all_day;
-  final String close_all_day;
+  final bool open_all_day;
+  final bool close_all_day;
   final double lat;
   final double lng;
   final String currency;
-  final String deposit;
+  final int deposit;
   final String shop_tel;
   final String country_code;
 }
+
+
+  @JsonSerializable()
+  class CGGShopProfileResponse {
+    CGGShopProfileResponse({
+      required this.ec,
+      required this.em,
+      required this.timestamp,
+      required this.data,
+      required this.msg,
+    });
+
+    factory CGGShopProfileResponse.fromJson(Map<String, dynamic> json) => _$CGGShopProfileResponseFromJson(json);
+    Map<String, dynamic> toJson() => _$CGGShopProfileResponseToJson(this);
+
+    final int ec;
+    final String em;
+    final int timestamp;
+    final CggShopData data;
+    final String msg;
+  }
+
 
 @JsonSerializable()
   class CGGShopSlots {
@@ -173,7 +195,7 @@ class CggShopData {
   final CGGShopProfile profile;
   final List<String> pricing_str;
   final String display_type;
-  final List<String> slots;
+  final CGGShopSlots slots;
   final bool available;
 }
 
@@ -200,7 +222,7 @@ class CGGShops {
   CGGShops({
     this.shops = const <CGGShop>[],
   });
-
+ 
   factory CGGShops.fromJson(Map<String, dynamic> json) => 
       _$CGGShopsFromJson(json);
   Map<String, dynamic> toJson() => _$CGGShopsToJson(this);
@@ -209,17 +231,17 @@ class CGGShops {
 }
 
 @JsonSerializable()
-class GetShopAPIResponse {
-  GetShopAPIResponse({
+class GetShoplistAPIResponse {
+  GetShoplistAPIResponse({
     required this.ec,
     required this.em,
     required this.timestamp,
     required this.data,
   });
 
-  factory GetShopAPIResponse.fromJson(Map<String, dynamic> json) =>
-      _$GetShopAPIResponseFromJson(json);
-  Map<String, dynamic> toJson() => _$GetShopAPIResponseToJson(this);
+  factory GetShoplistAPIResponse.fromJson(Map<String, dynamic> json) =>
+      _$GetShoplistAPIResponseFromJson(json);
+  Map<String, dynamic> toJson() => _$GetShoplistAPIResponseToJson(this);
 
   final int ec;
   final String em;
@@ -227,25 +249,39 @@ class GetShopAPIResponse {
   final CGGShops data;
 }
 
+Future<CggShopData?> getCGGShopProfileAPIResponse(String id) async {
+  String cggShopProfileURL = 'https://api.chargergogo.com/api/v2/shops/$id';
+  try {
+    final response = await http.get(Uri.parse(cggShopProfileURL));
+    print(response.body);
+    if (response.statusCode == 200) {
+      try {
+        var apiResponse = CGGShopProfileResponse.fromJson(
+            json.decode(response.body) as Map<String, dynamic>);
+        return apiResponse.data;
+      } catch (e) {
+        print("Failed to decode response body: $e");
+      }
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print(e);
+    }
+  }
+  return null;
+}
+
+Future<CGGShopProfile?> getCGGShopProfile(String id) async {
+  var cggShopProfileResponse = await getCGGShopProfileAPIResponse(id);
+  if (cggShopProfileResponse != null) {
+    print(cggShopProfileResponse.profile.shop_name);
+    return cggShopProfileResponse.profile;
+  }
+  return null;
+}
 
 Future<CGGShops> getCGGShops() async {
   const cggShopsURL = 'https://api.chargergogo.com/api/v2/nearby/shoplist';
-  // Retrieve the locations of Google offices
-   // build headers
-    // curl "https://api.chargergogo.com/api/v2/nearby/shoplist" -X POST -H
-    // "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0"
-    // -H "Accept: application/json, text/plain, */*"
-    // -H "Accept-Language: en-US,en;q=0.5"
-    // -H "Accept-Encoding: gzip, deflate, br, zstd"
-    // -H "Content-Type: application/x-www-form-urlencoded"
-    // -H "lang: en"
-    // -H "Origin: https://app.chargergogo.com"
-    // -H "Connection: keep-alive"
-    // -H "Referer: https://app.chargergogo.com/"
-    // -H "Cookie: messagesUtk=3319ed76fa2e4326957b013333ab36ce"
-    // -H "Sec-Fetch-Dest: empty" -H "Sec-Fetch-Mode: cors"
-    // -H "Sec-Fetch-Site: same-site"
-    // -H "TE: trailers"
   try {
     final response = await http.post(Uri.parse(cggShopsURL),
     body: {
@@ -256,10 +292,10 @@ Future<CGGShops> getCGGShops() async {
     );
     // String response = '{"ec":200,"em":"ok","timestamp": 1724815918,"data":{"shops":[{"id":"13113","lat":-8.1191131,"lng":-34.8953107,"business_hours":"0:00-24:00"}]}}';
     // return GetShopAPIResponse.fromJson(json.decode(response) as Map<String, dynamic>).data;
-    print(response.body);
+    // print(response.body);
     if (response.statusCode == 200) {
       try {
-        var apiResponse = GetShopAPIResponse.fromJson(
+        var apiResponse = GetShoplistAPIResponse.fromJson(
             json.decode(response.body) as Map<String, dynamic>);
         return apiResponse.data;
       } catch (e) {

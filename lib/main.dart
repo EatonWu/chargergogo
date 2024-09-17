@@ -3,6 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter/rendering.dart';
 import 'package:chargergogo/locations.dart' as locations;
 import 'package:chargergogo/search.dart' as search_bar;
+import 'package:chargergogo/searchBanner.dart' as searchBanner;
 
 void main() {
   debugPaintSizeEnabled = false;
@@ -124,7 +125,7 @@ class googleMapZoomScrollController with ChangeNotifier {
 }
 
 class _MyAppState extends State<MyApp> {
-  late GoogleMapController mapController;
+  GoogleMapController? mapController;
 
   final LatLng _center = const LatLng(36.1716, -115.1391);
   // final LatLng _center = const LatLng(56.172249, 10.187372)
@@ -133,6 +134,8 @@ class _MyAppState extends State<MyApp> {
   Map<String, Marker> current_markers = {};
   bool searchIsOpen = false;
   late googleMapZoomScrollController zoomScrollControl = googleMapZoomScrollController();
+  locations.CGGShop? currentlySelectedShop;
+  locations.CGGShopProfile? currentlySelectedShopProfile;
 
   // set current time
   final currentHour = DateTime.now().hour;
@@ -164,21 +167,32 @@ class _MyAppState extends State<MyApp> {
           markerId: MarkerId(shop.id),
           icon: chosenIcon,
           position: LatLng(shop.lat, shop.lng),
-          infoWindow: InfoWindow(
-            title: shop.id,
-            snippet: shop.business_hours,
-          ),
-        onTap: () async {
-            var oldZoom = await mapController.getZoomLevel();
-            // first set camera position to zoom out by 1
-            mapController.animateCamera(
-              CameraUpdate.newCameraPosition(
-                CameraPosition(
-                  target: LatLng(shop.lat, shop.lng),
-                  zoom: 15
+          // infoWindow: InfoWindow(
+          //   title: shop.id,
+          //   snippet: shop.business_hours,
+          // ),
+          onTap: () async {
+            if (currentlySelectedShop == null || currentlySelectedShop?.id != shop.id) {
+              // print("Currently selected shop: ${currentlySelectedShop?.id}");
+              
+              currentlySelectedShop = shop;
+              currentlySelectedShopProfile = await locations.getCGGShopProfile(shop.id);
+            }
+
+            if (mapController != null) {
+              var oldZoom = await mapController!.getZoomLevel();
+              // first set camera position to zoom out by 1
+              mapController!.animateCamera(
+                CameraUpdate.newCameraPosition(
+                  CameraPosition(
+                    target: LatLng(shop.lat, shop.lng),
+                    zoom: 18
+                  ),
                 ),
-              ),
-            );
+              );
+              setState(() {
+              });
+            }
           },
         );
         _all_markers[shop.id] = marker;
@@ -227,14 +241,22 @@ class _MyAppState extends State<MyApp> {
           end: 0,
           child: Column(mainAxisSize: MainAxisSize.min,
           children: [
-            searchBarAndResults(zoomScrollControl)
+            mapController == null? const Center() : searchBarAndResults(zoomScrollControl, mapController!),
           ]),
         ),
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: currentlySelectedShopProfile == null ? Text("No Shop Selected") : searchBanner.ShopBanner(shopProfile: currentlySelectedShopProfile!),
+          )
+        )
       ]
     );
   }
 
-  Widget searchBarAndResults(googleMapZoomScrollController zoomScrollControl) {
+  Widget searchBarAndResults(googleMapZoomScrollController zoomScrollControl, GoogleMapController mapController) {
     return Padding( 
       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Container(
@@ -252,6 +274,7 @@ class _MyAppState extends State<MyApp> {
                 searchIsOpen = false;
               });
             },
+            mapController: mapController,
           )),
       );
   }

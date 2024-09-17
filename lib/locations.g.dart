@@ -73,12 +73,12 @@ CGGShopProfile _$CGGShopProfileFromJson(Map<String, dynamic> json) =>
       image_l: json['image_l'] as String,
       address: json['address'] as String,
       business_hours: json['business_hours'] as String,
-      open_all_day: json['open_all_day'] as String,
-      close_all_day: json['close_all_day'] as String,
+      open_all_day: json['open_all_day'] as bool,
+      close_all_day: json['close_all_day'] as bool,
       lat: (json['lat'] as num).toDouble(),
       lng: (json['lng'] as num).toDouble(),
       currency: json['currency'] as String,
-      deposit: json['deposit'] as String,
+      deposit: (json['deposit'] as num).toInt(),
       shop_tel: json['shop_tel'] as String,
       country_code: json['country_code'] as String,
     );
@@ -100,6 +100,26 @@ Map<String, dynamic> _$CGGShopProfileToJson(CGGShopProfile instance) =>
       'country_code': instance.country_code,
     };
 
+CGGShopProfileResponse _$CGGShopProfileResponseFromJson(
+        Map<String, dynamic> json) =>
+    CGGShopProfileResponse(
+      ec: (json['ec'] as num).toInt(),
+      em: json['em'] as String,
+      timestamp: (json['timestamp'] as num).toInt(),
+      data: CggShopData.fromJson(json['data'] as Map<String, dynamic>),
+      msg: json['msg'] as String,
+    );
+
+Map<String, dynamic> _$CGGShopProfileResponseToJson(
+        CGGShopProfileResponse instance) =>
+    <String, dynamic>{
+      'ec': instance.ec,
+      'em': instance.em,
+      'timestamp': instance.timestamp,
+      'data': instance.data,
+      'msg': instance.msg,
+    };
+
 CGGShopSlots _$CGGShopSlotsFromJson(Map<String, dynamic> json) => CGGShopSlots(
       on: (json['on'] as num).toInt(),
       off: (json['off'] as num).toInt(),
@@ -117,7 +137,7 @@ CggShopData _$CggShopDataFromJson(Map<String, dynamic> json) => CggShopData(
           .map((e) => e as String)
           .toList(),
       display_type: json['display_type'] as String,
-      slots: (json['slots'] as List<dynamic>).map((e) => e as String).toList(),
+      slots: CGGShopSlots.fromJson(json['slots'] as Map<String, dynamic>),
       available: json['available'] as bool,
     );
 
@@ -155,15 +175,17 @@ Map<String, dynamic> _$CGGShopsToJson(CGGShops instance) => <String, dynamic>{
       'shops': instance.shops,
     };
 
-GetShopAPIResponse _$GetShopAPIResponseFromJson(Map<String, dynamic> json) =>
-    GetShopAPIResponse(
+GetShoplistAPIResponse _$GetShoplistAPIResponseFromJson(
+        Map<String, dynamic> json) =>
+    GetShoplistAPIResponse(
       ec: (json['ec'] as num).toInt(),
       em: json['em'] as String,
       timestamp: (json['timestamp'] as num).toInt(),
       data: CGGShops.fromJson(json['data'] as Map<String, dynamic>),
     );
 
-Map<String, dynamic> _$GetShopAPIResponseToJson(GetShopAPIResponse instance) =>
+Map<String, dynamic> _$GetShoplistAPIResponseToJson(
+        GetShoplistAPIResponse instance) =>
     <String, dynamic>{
       'ec': instance.ec,
       'em': instance.em,
