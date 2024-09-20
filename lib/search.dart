@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_sliding_box/flutter_sliding_box.dart';
 part 'search.g.dart';
 
 class SearchBarAndResultsWidget extends StatefulWidget{
@@ -15,13 +16,15 @@ class SearchBarAndResultsWidget extends StatefulWidget{
   final Function() onSearchClose;
   final GoogleMapController mapController;
   final ShopBannerController shopBannerController;
+  final BoxController boxController;
 
   SearchBarAndResultsWidget({
     Key? key,
     required this.onSearchOpen,
     required this.onSearchClose,
     required this.mapController,
-    required this.shopBannerController
+    required this.shopBannerController,
+    required this.boxController
     }) : super(key: key);
 
 
@@ -236,10 +239,6 @@ class _SearchBarAndResultsWidgetState extends State<SearchBarAndResultsWidget> {
                 child: Stack(
                   children:[
                     Container(
-                      color: Colors.transparent,
-                      child: const AbsorbPointer(absorbing: true),
-                    ),
-                    Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
@@ -255,12 +254,14 @@ class _SearchBarAndResultsWidgetState extends State<SearchBarAndResultsWidget> {
                               onTap: () async {
                                 var shop = _searchResults[index];
                                 var shopProfile = await locations.getCGGShopProfile(shop.getShopID());
+
                                 // print("Tapped on ${_searchResults[index].shop_name}");
                                 if (searchOpen) {
                                   widget.onSearchClose();
                                   searchOpen = false;
                                 }
                                 setState(() {
+                                  // widget.boxController.showBox();
                                   // set search text
                                   _searchController.text = _searchResults[index].address;
                                   if (_searchResults.isNotEmpty) {

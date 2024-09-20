@@ -42,7 +42,7 @@ dependencies:
   json_annotation: ^4.9.0
   json_serializable: ^6.8.0
   geolocator: ^13.0.1 
-
+  flutter_sliding_box: ^1.1.5
 dev_dependencies:
   flutter_test:
     sdk: flutter

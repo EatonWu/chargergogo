@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_sliding_box/flutter_sliding_box.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter/rendering.dart';
 import 'package:chargergogo/locations.dart' as locations;
 import 'package:chargergogo/search.dart' as search_bar;
 import 'package:chargergogo/searchBanner.dart' as searchBanner;
+import 'package:flutter/widgets.dart';
 
 void main() {
   debugPaintSizeEnabled = false;
@@ -128,7 +130,7 @@ class ShopBannerController with ChangeNotifier {
   locations.CGGShop? currentlySelectedShop; 
   locations.CGGShopProfile? currentlySelectedShopProfile;
 
-  void setShop(locations.CGGShop shop) {
+  void setShop(locations.CGGShop? shop) {
     currentlySelectedShop = shop;
     notifyListeners();
   }
@@ -147,17 +149,18 @@ class ShopBannerController with ChangeNotifier {
 class _MyAppState extends State<MyApp> {
   GoogleMapController? mapController;
   ShopBannerController shopBannerController = ShopBannerController();
-
+  BoxController boxController = BoxController();
   final LatLng _center = const LatLng(36.1716, -115.1391);
   // final LatLng _center = const LatLng(56.172249, 10.187372)
   final Map<String, Marker> _all_markers = {};
   final Map<String, Marker> _open_markers = {};
   Map<String, Marker> current_markers = {};
   bool searchIsOpen = false;
+  bool bannerIsOpen = false;
   late googleMapZoomScrollController zoomScrollControl = googleMapZoomScrollController();
   // locations.CGGShop? currentlySelectedShop;
   // locations.CGGShopProfile? currentlySelectedShopProfile;
-
+  
   // set current time
   final currentHour = DateTime.now().hour;
 
@@ -195,10 +198,11 @@ class _MyAppState extends State<MyApp> {
           onTap: () async {
             if (shopBannerController.currentlySelectedShop == null || shopBannerController.currentlySelectedShop?.id != shop.id) {
               // print("Currently selected shop: ${currentlySelectedShop?.id}");
-              
               shopBannerController.currentlySelectedShop = shop;
               shopBannerController.currentlySelectedShopProfile = await locations.getCGGShopProfile(shop.id);
             }
+
+            boxController.showBox();
 
             if (mapController != null) {
               var oldZoom = await mapController!.getZoomLevel();
@@ -248,7 +252,7 @@ class _MyAppState extends State<MyApp> {
     return Stack(
       children: [
         GoogleMap(
-            scrollGesturesEnabled: !searchIsOpen,
+            scrollGesturesEnabled: !searchIsOpen && !bannerIsOpen,
             onMapCreated: _onMapCreated,
             initialCameraPosition: CameraPosition(
               target: _center,
@@ -262,7 +266,7 @@ class _MyAppState extends State<MyApp> {
           end: 0,
           child: Column(mainAxisSize: MainAxisSize.min,
           children: [
-            mapController == null? const Center() : searchBarAndResults(zoomScrollControl, mapController!),
+            mapController == null? Container() : searchBarAndResults(zoomScrollControl, mapController!),
           ]),
         ),
         Positioned(
@@ -270,9 +274,31 @@ class _MyAppState extends State<MyApp> {
           left: 0,
           right: 0,
           child: Center(
-            child: shopBannerController.currentlySelectedShopProfile == null ? 
-            Text("No Shop Selected") : 
-            searchBanner.ShopBanner(shopBannerController: shopBannerController,),
+            child: 
+            ListenableBuilder(
+              listenable: shopBannerController,
+              builder: (BuildContext context, Widget? child) {
+                return shopBannerController.currentlySelectedShopProfile == null ? 
+                const Text("No Shop Selected") : 
+                SizedBox(
+                  width: 600,
+                  height: 400,
+                  child: searchBanner.ShopBanner(
+                    onBannerOpen: () {
+                      setState(() {
+                        bannerIsOpen = true;
+                      });
+                    },
+                    onBannerClose: () {
+                      setState(() {
+                        bannerIsOpen = false;
+                      });
+                    },
+                    shopBannerController: shopBannerController,
+                    boxController: boxController,
+                    mapController: zoomScrollControl
+                  ));
+              }) 
           )
         )
       ]
@@ -287,18 +313,19 @@ class _MyAppState extends State<MyApp> {
           child: search_bar.SearchBarAndResultsWidget(
             onSearchOpen: () {
               setState(() {
-                print("search is open");
+                // print("search is open");
                 searchIsOpen = true;
               });
             },
             onSearchClose: () {
-              print("search is closed");
+              // print("search is closed");
               setState(() {
                 searchIsOpen = false;
               });
             },
             mapController: mapController,
             shopBannerController: shopBannerController,
+            boxController: boxController,
           )),
       );
   }
