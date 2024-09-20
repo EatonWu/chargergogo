@@ -131,18 +131,24 @@ class ShopBannerController with ChangeNotifier {
   locations.CGGShopProfile? currentlySelectedShopProfile;
 
   void setShop(locations.CGGShop? shop) {
-    currentlySelectedShop = shop;
-    notifyListeners();
+    if (currentlySelectedShop != shop) {
+      currentlySelectedShop = shop;
+      notifyListeners();
+    }
   }
 
   void setShopProfile(locations.CGGShopProfile? shopProfile) {
-    currentlySelectedShopProfile = shopProfile;
-    notifyListeners();
+    if (currentlySelectedShopProfile != shopProfile) {
+      currentlySelectedShopProfile = shopProfile;
+      notifyListeners();
+    }
   }
 
   void clearShopProfile() {
-    currentlySelectedShopProfile = null;
-    notifyListeners();
+    if (currentlySelectedShopProfile != null) {
+      currentlySelectedShopProfile = null;
+      notifyListeners();
+    }
   }
 }
 
@@ -278,6 +284,7 @@ class _MyAppState extends State<MyApp> {
             ListenableBuilder(
               listenable: shopBannerController,
               builder: (BuildContext context, Widget? child) {
+                print("Rebuilt ShopBanner");
                 return shopBannerController.currentlySelectedShopProfile == null ? 
                 const Text("No Shop Selected") : 
                 SizedBox(
@@ -285,11 +292,13 @@ class _MyAppState extends State<MyApp> {
                   height: 400,
                   child: searchBanner.ShopBanner(
                     onBannerOpen: () {
+                      print("Banner Opened");
                       setState(() {
                         bannerIsOpen = true;
                       });
                     },
                     onBannerClose: () {
+                      print("Banner Closed");
                       setState(() {
                         bannerIsOpen = false;
                       });
@@ -312,6 +321,9 @@ class _MyAppState extends State<MyApp> {
           width: 300,
           child: search_bar.SearchBarAndResultsWidget(
             onSearchOpen: () {
+              if (searchIsOpen) {
+                return;
+              }
               setState(() {
                 // print("search is open");
                 searchIsOpen = true;
@@ -319,6 +331,9 @@ class _MyAppState extends State<MyApp> {
             },
             onSearchClose: () {
               // print("search is closed");
+              if (!searchIsOpen) {
+                return;
+              }
               setState(() {
                 searchIsOpen = false;
               });

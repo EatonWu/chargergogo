@@ -48,11 +48,11 @@ class _ShopBannerState extends State<ShopBanner> {
         height: 500,
         child: TapRegion(
           onTapOutside: (event) {
-            print("Tapping Outside");
+            // print("Tapping Outside");
             widget.boxController.hideBox();
           },
           onTapInside: (event) {
-            print("Tapping Inside");
+            // print("Tapping Inside");
           },
           child: SlidingBox(
               controller: widget.boxController,
@@ -68,7 +68,7 @@ class _ShopBannerState extends State<ShopBanner> {
                 }
               },
               onBoxSlide: (double slideAmount) {
-                if (slideAmount == 0) {
+                if (slideAmount == 0 && widget.boxController.isBoxVisible) {
                   widget.boxController.hideBox();
                 }
                 // print("Box Slid: $slideAmount");
