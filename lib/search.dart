@@ -261,7 +261,7 @@ class _SearchBarAndResultsWidgetState extends State<SearchBarAndResultsWidget> {
                                   searchOpen = false;
                                 }
                                 setState(() {
-                                  // widget.boxController.showBox();
+                                  widget.boxController.showBox();
                                   // set search text
                                   _searchController.text = _searchResults[index].address;
                                   if (_searchResults.isNotEmpty) {

@@ -284,7 +284,7 @@ class _MyAppState extends State<MyApp> {
             ListenableBuilder(
               listenable: shopBannerController,
               builder: (BuildContext context, Widget? child) {
-                print("Rebuilt ShopBanner");
+                // print("Rebuilt ShopBanner");
                 return shopBannerController.currentlySelectedShopProfile == null ? 
                 const Text("No Shop Selected") : 
                 SizedBox(
@@ -298,7 +298,7 @@ class _MyAppState extends State<MyApp> {
                       });
                     },
                     onBannerClose: () {
-                      print("Banner Closed");
+                      // print("Banner Closed");
                       setState(() {
                         bannerIsOpen = false;
                       });
