@@ -47,6 +47,51 @@ TimeOfDay? _parseTimeOfDay(String time) {
   return null; // If parsing failed
 }
 
+//
+
+String formatTimeRange(String timeRange) {
+  // Split the time range into opening and closing times
+  List<String> times = timeRange.split('-');
+  if (times.length != 2) {
+    throw ArgumentError('Invalid time range format');
+  }
+
+  // Parse the opening and closing times
+  TimeOfDay openingTime = _parseTime(times[0].trim());
+  TimeOfDay closingTime = _parseTime(times[1].trim());
+
+  // Handle edge cases
+  if (openingTime.hour == 0 && openingTime.minute == 0 && closingTime.hour == 0 && closingTime.minute == 0) {
+    return '12:00AM - 12:00AM'; // Open all day
+  }
+  if (closingTime.hour == 24 && closingTime.minute == 0) {
+    closingTime = TimeOfDay(hour: 23, minute: 59); // Treat 24:00 as 23:59
+  }
+
+  // Convert to 12-hour format with AM/PM
+  String openingTimeFormatted = _formatTime(openingTime);
+  String closingTimeFormatted = _formatTime(closingTime);
+
+  return '$openingTimeFormatted - $closingTimeFormatted';
+}
+
+TimeOfDay _parseTime(String time) {
+  List<String> parts = time.split(':');
+  if (parts.length != 2) {
+    throw ArgumentError('Invalid time format');
+  }
+  int hour = int.parse(parts[0]);
+  int minute = int.parse(parts[1]);
+  return TimeOfDay(hour: hour, minute: minute);
+}
+
+String _formatTime(TimeOfDay time) {
+  final hours = time.hour % 12 == 0 ? 12 : time.hour % 12;
+  final minutes = time.minute.toString().padLeft(2, '0');
+  final period = time.hour < 12 ? 'AM' : 'PM';
+  return '$hours:$minutes$period';
+}
+
 BitmapDescriptor getIconFromTimeRange(String timeRange, BitmapDescriptor icon, BitmapDescriptor transparent_icon){
   var split = parseTimeRange(timeRange);
   var currentHour = DateTime.now().hour;
@@ -77,7 +122,11 @@ bool nowInTimeRange(String timeRange) {
   var openHour = split[0].hour;
   var closeHour = split[1].hour;
 
-  if (openHour >= currentHour && currentHour >= closeHour) {
+  if (openHour == 0 && closeHour == 0) {
+    return true;
+  }
+
+  if (openHour >= currentHour || currentHour >= closeHour) {
     return false;
   }
   return true;
@@ -127,10 +176,10 @@ class googleMapZoomScrollController with ChangeNotifier {
 }
 
 class ShopBannerController with ChangeNotifier {
-  locations.CGGShop? currentlySelectedShop; 
+  locations.CggShopData? currentlySelectedShop;
   locations.CGGShopProfile? currentlySelectedShopProfile;
 
-  void setShop(locations.CGGShop? shop) {
+  void setShop(locations.CggShopData? shop) {
     if (currentlySelectedShop != shop) {
       currentlySelectedShop = shop;
       notifyListeners();
@@ -202,11 +251,14 @@ class _MyAppState extends State<MyApp> {
           //   snippet: shop.business_hours,
           // ),
           onTap: () async {
-            if (shopBannerController.currentlySelectedShop == null || shopBannerController.currentlySelectedShop?.id != shop.id) {
-              // print("Currently selected shop: ${currentlySelectedShop?.id}");
-              shopBannerController.currentlySelectedShop = shop;
-              shopBannerController.currentlySelectedShopProfile = await locations.getCGGShopProfile(shop.id);
-            }
+            await locations.getCGGShopData(shop.id).then(
+                (value) => {
+                  shopBannerController.currentlySelectedShop = value,
+                  if (value != null) {
+                    shopBannerController.currentlySelectedShopProfile = value.profile
+                  }
+                }
+            );
 
             boxController.showBox();
 
@@ -258,15 +310,14 @@ class _MyAppState extends State<MyApp> {
     return Stack(
       children: [
         GoogleMap(
-            scrollGesturesEnabled: !searchIsOpen && !bannerIsOpen,
-            onMapCreated: _onMapCreated,
-            initialCameraPosition: CameraPosition(
-              target: _center,
-              zoom: 11.0,
-            ),
-            markers: current_markers.values.toSet(),
+          scrollGesturesEnabled: !searchIsOpen && !bannerIsOpen,
+          onMapCreated: _onMapCreated,
+          initialCameraPosition: CameraPosition(
+            target: _center,
+            zoom: 11.0,
           ),
-        // center the text at the bottom of the screen
+          markers: current_markers.values.toSet(),
+        ),
         PositionedDirectional(
           top: 0,
           end: 0,
@@ -292,7 +343,7 @@ class _MyAppState extends State<MyApp> {
                   height: 400,
                   child: searchBanner.ShopBanner(
                     onBannerOpen: () {
-                      print("Banner Opened");
+                      // print("Banner Opened");
                       setState(() {
                         bannerIsOpen = true;
                       });

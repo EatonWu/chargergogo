@@ -252,8 +252,9 @@ class _SearchBarAndResultsWidgetState extends State<SearchBarAndResultsWidget> {
                             return SingleResultTile(shop: _searchResults[index],
                               mapController: widget.mapController,
                               onTap: () async {
-                                var shop = _searchResults[index];
-                                var shopProfile = await locations.getCGGShopProfile(shop.getShopID());
+                                await locations.getCGGShopData(_searchResults[index].shop_id).then((value) {
+                                  widget.shopBannerController.setShop(value);
+                                });
 
                                 // print("Tapped on ${_searchResults[index].shop_name}");
                                 if (searchOpen) {
@@ -268,9 +269,6 @@ class _SearchBarAndResultsWidgetState extends State<SearchBarAndResultsWidget> {
                                     _tempSearchResults = _searchResults;
                                     _searchResults = [];
                                   }
-
-                                  // set search banner shop
-                                  widget.shopBannerController.setShopProfile(shopProfile);
                                 });
                               }
                             );

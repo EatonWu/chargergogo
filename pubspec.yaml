@@ -44,6 +44,8 @@ dependencies:
   geolocator: ^13.0.1 
   flutter_sliding_box: ^1.1.5
   modal_bottom_sheet: ^3.0.0
+  url_launcher: ^6.3.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -72,6 +74,8 @@ flutter:
     - assets/locations.json
     - assets/shops.json
     - assets/transparent_cgg_logo.png
+    - assets/default_background.jpg
+    - assets/default_c8.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

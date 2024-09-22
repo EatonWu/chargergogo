@@ -271,6 +271,14 @@ Future<CggShopData?> getCGGShopProfileAPIResponse(String id) async {
   return null;
 }
 
+Future<CggShopData?> getCGGShopData(String id) async {
+  var cggShopProfileResponse = await getCGGShopProfileAPIResponse(id);
+  if (cggShopProfileResponse != null) {
+    return cggShopProfileResponse;
+  }
+  return null;
+}
+
 Future<CGGShopProfile?> getCGGShopProfile(String id) async {
   var cggShopProfileResponse = await getCGGShopProfileAPIResponse(id);
   if (cggShopProfileResponse != null) {
