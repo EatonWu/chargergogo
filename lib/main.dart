@@ -261,6 +261,7 @@ class _MyAppState extends State<MyApp> {
             );
 
             boxController.showBox();
+            bannerIsOpen = true;
 
             if (mapController != null) {
               var oldZoom = await mapController!.getZoomLevel();
@@ -340,7 +341,7 @@ class _MyAppState extends State<MyApp> {
                 const Text("No Shop Selected") : 
                 SizedBox(
                   width: 600,
-                  height: 400,
+                  height: 700,
                   child: searchBanner.ShopBanner(
                     onBannerOpen: () {
                       // print("Banner Opened");
@@ -352,6 +353,7 @@ class _MyAppState extends State<MyApp> {
                       // print("Banner Closed");
                       setState(() {
                         bannerIsOpen = false;
+
                       });
                     },
                     shopBannerController: shopBannerController,

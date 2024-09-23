@@ -254,7 +254,11 @@ class _SearchBarAndResultsWidgetState extends State<SearchBarAndResultsWidget> {
                               onTap: () async {
                                 await locations.getCGGShopData(_searchResults[index].shop_id).then((value) {
                                   widget.shopBannerController.setShop(value);
+                                  if (value != null) {
+                                    widget.shopBannerController.currentlySelectedShopProfile = value.profile;
+                                  }
                                 });
+
 
                                 // print("Tapped on ${_searchResults[index].shop_name}");
                                 if (searchOpen) {
