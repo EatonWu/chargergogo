@@ -207,9 +207,10 @@ class _MyAppState extends State<MyApp> {
   BoxController boxController = BoxController();
   final LatLng _center = const LatLng(36.1716, -115.1391);
   // final LatLng _center = const LatLng(56.172249, 10.187372)
-  final Map<String, Marker> _all_markers = {};
-  final Map<String, Marker> _open_markers = {};
-  Map<String, Marker> current_markers = {};
+  final Map<String, Marker> _allMarkers = {};
+  final Map<String, Marker> _openMarkers = {};
+  Map<String, Marker> _currentMarkers = {};
+  bool showClosedSwitch = true;
   bool searchIsOpen = false;
   bool bannerIsOpen = false;
   late googleMapZoomScrollController zoomScrollControl = googleMapZoomScrollController();
@@ -236,8 +237,8 @@ class _MyAppState extends State<MyApp> {
         const ImageConfiguration(size: Size(60, 60)), 'transparent_cgg_logo.png');
 
     setState(() {
-      _all_markers.clear();
-      _open_markers.clear();
+      _allMarkers.clear();
+      _openMarkers.clear();
 
       // cgg stuff
       for (final shop in cggShops.shops) {
@@ -279,9 +280,9 @@ class _MyAppState extends State<MyApp> {
             }
           },
         );
-        _all_markers[shop.id] = marker;
+        _allMarkers[shop.id] = marker;
         if (nowInTimeRange(shop.business_hours)) {
-          _open_markers[shop.id] = marker;
+          _openMarkers[shop.id] = marker;
         }
       }
     });
@@ -306,7 +307,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   Widget cggMapPage() {
-    current_markers = _all_markers;
+    _currentMarkers = showClosedSwitch ? _allMarkers : _openMarkers;
     // print("marker quantity: ${_markers.length}");
     return Stack(
       children: [
@@ -317,16 +318,24 @@ class _MyAppState extends State<MyApp> {
             target: _center,
             zoom: 11.0,
           ),
-          markers: current_markers.values.toSet(),
+          markers: _currentMarkers.values.toSet(),
         ),
+        // ** SEARCH BAR ** //
         PositionedDirectional(
           top: 0,
           end: 0,
           child: Column(mainAxisSize: MainAxisSize.min,
-          children: [
-            mapController == null? Container() : searchBarAndResults(zoomScrollControl, mapController!),
+            children: [
+              Row(
+                children: [
+                  mapController == null? Container() : searchBarAndResults(zoomScrollControl, mapController!),
+                ],
+              ),
+              // hide unavailable shops switch
+
           ]),
         ),
+        // ** SHOP BANNER ** //
         Positioned(
           bottom: 0,
           left: 0,
@@ -369,8 +378,8 @@ class _MyAppState extends State<MyApp> {
 
   Widget searchBarAndResults(googleMapZoomScrollController zoomScrollControl, GoogleMapController mapController) {
     return Padding( 
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: SizedBox(
           width: 300,
           child: search_bar.SearchBarAndResultsWidget(
             onSearchOpen: () {
@@ -394,8 +403,73 @@ class _MyAppState extends State<MyApp> {
             mapController: mapController,
             shopBannerController: shopBannerController,
             boxController: boxController,
+            children: [
+              LabeledSwitch(
+                label: 'Show closed stores?',
+                value: showClosedSwitch,
+                onChanged: (value) {
+                  setState(() {
+                    showClosedSwitch = value;
+                    if (showClosedSwitch) {
+                      _currentMarkers = _allMarkers;
+                    } else {
+                      _currentMarkers = _openMarkers;
+                    }
+                  });
+                },
+              ),
+            ]
           )),
       );
   }
 
+}
+
+class LabeledSwitch extends StatelessWidget {
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const LabeledSwitch({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white, // background color
+          borderRadius: BorderRadius.circular(20), // round rect
+          border: Border.all(color: Colors.grey), // optional border
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Transform.scale(
+                scale: 0.75,
+                child: Switch(
+                  value: value,
+                  onChanged: onChanged,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

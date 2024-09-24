@@ -17,15 +17,17 @@ class SearchBarAndResultsWidget extends StatefulWidget{
   final GoogleMapController mapController;
   final ShopBannerController shopBannerController;
   final BoxController boxController;
+  List<Widget>? children = [];
 
   SearchBarAndResultsWidget({
-    Key? key,
+    super.key,
     required this.onSearchOpen,
     required this.onSearchClose,
     required this.mapController,
     required this.shopBannerController,
-    required this.boxController
-    }) : super(key: key);
+    required this.boxController,
+    this.children,
+    });
 
 
   @override
@@ -175,119 +177,114 @@ class _SearchBarAndResultsWidgetState extends State<SearchBarAndResultsWidget> {
   @override
   Widget build(BuildContext context) {
     double suggestionHeight = (_searchResults.length * 70.0).clamp(0, 500);
-    return Stack(children: [
-      Positioned.fill(
-        child: AbsorbPointer(
-          absorbing: true, // Prevents interaction with this layer
-          child: Container(
-            color: Colors.transparent, // Fully transparent layer
-          ),
-        ),
-      ),
-      TapRegion(
-        onTapInside: (event) {
-          if (!searchOpen) {
-            widget.onSearchOpen();
-            searchOpen = true;
-          }
-          setState(() {
-            if (_searchResults.isEmpty) {
-              _searchResults = _tempSearchResults;
-            }
-          });
-        },
-        onTapOutside: (event) {
-          if (searchOpen) {
-            widget.onSearchClose();
-            searchOpen = false;
-          }
-          setState(() {
-            if (_searchResults.isNotEmpty) {
-              _tempSearchResults = _searchResults;
-              _searchResults = [];
-            }
-          });
-        },
-        child: Container(
-          child: Column(
-            children: [
-            TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                filled: true,
-                labelText: 'Search...',
-                // squircle border:
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                fillColor: Colors.white,
-                prefixIcon: Icon(Icons.search),
-              ),
-              onChanged: (value) async {
-                if (value.isNotEmpty) {
-                  CGGSearchData results = await getSearchQueryResults(value);
-                  setState(() {
-                    _searchResults = results.shops;
-                  });
+    return Padding(
+      padding: const EdgeInsets.only(top: 8.0),
+      child: Column(
+        children: [
+          TapRegion(
+            onTapInside: (event) {
+              if (!searchOpen) {
+                widget.onSearchOpen();
+                searchOpen = true;
+              }
+              setState(() {
+                if (_searchResults.isEmpty) {
+                  _searchResults = _tempSearchResults;
                 }
-              },
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: SizedBox(
-                height: suggestionHeight,
-                child: Stack(
-                  children:[
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.grey),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: ListView.builder(
-                          itemCount: _searchResults.length,
-                          itemBuilder: (context, index) {
-                            return SingleResultTile(shop: _searchResults[index],
-                              mapController: widget.mapController,
-                              onTap: () async {
-                                await locations.getCGGShopData(_searchResults[index].shop_id).then((value) {
-                                  widget.shopBannerController.setShop(value);
-                                  if (value != null) {
-                                    widget.shopBannerController.currentlySelectedShopProfile = value.profile;
-                                  }
-                                });
-
-
-                                // print("Tapped on ${_searchResults[index].shop_name}");
-                                if (searchOpen) {
-                                  widget.onSearchClose();
-                                  searchOpen = false;
-                                }
-                                setState(() {
-                                  widget.boxController.showBox();
-                                  // set search text
-                                  _searchController.text = _searchResults[index].address;
-                                  if (_searchResults.isNotEmpty) {
-                                    _tempSearchResults = _searchResults;
-                                    _searchResults = [];
-                                  }
-                                });
-                              }
-                            );
-                          },
-                        ),
-                      ),
+              });
+            },
+            onTapOutside: (event) {
+              if (searchOpen) {
+                widget.onSearchClose();
+                searchOpen = false;
+              }
+              setState(() {
+                if (_searchResults.isNotEmpty) {
+                  _tempSearchResults = _searchResults;
+                  _searchResults = [];
+                }
+              });
+            },
+            child: Container(
+              child: Column(
+                children: [
+                TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    filled: true,
+                    labelText: 'Search...',
+                    // squircle border:
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                  ]
+                    fillColor: Colors.white,
+                    prefixIcon: Icon(Icons.search),
+                  ),
+                  onChanged: (value) async {
+                    if (value.isNotEmpty) {
+                      CGGSearchData results = await getSearchQueryResults(value);
+                      setState(() {
+                        _searchResults = results.shops;
+                      });
+                    }
+                  },
                 ),
-              ),
+                if (searchOpen) Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: SizedBox(
+                    height: suggestionHeight,
+                    child: Stack(
+                      children:[
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.grey),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: ListView.builder(
+                              itemCount: _searchResults.length,
+                              itemBuilder: (context, index) {
+                                return SingleResultTile(shop: _searchResults[index],
+                                  mapController: widget.mapController,
+                                  onTap: () async {
+                                    await locations.getCGGShopData(_searchResults[index].shop_id).then((value) {
+                                      widget.shopBannerController.setShop(value);
+                                      if (value != null) {
+                                        widget.shopBannerController.currentlySelectedShopProfile = value.profile;
+                                      }
+                                    });
+                                    // print("Tapped on ${_searchResults[index].shop_name}");
+                                    if (searchOpen) {
+                                      widget.onSearchClose();
+                                      searchOpen = false;
+                                    }
+                                    setState(() {
+                                      widget.boxController.showBox();
+                                      // set search text
+                                      _searchController.text = _searchResults[index].address;
+                                      if (_searchResults.isNotEmpty) {
+                                        _tempSearchResults = _searchResults;
+                                        _searchResults = [];
+                                      }
+                                    });
+                                  }
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      ]
+                    ),
+                  ),
+                ),
+              ],),
             ),
-          ],),
-        ),
-      )
-      ]
+          ),
+          if (widget.children != null && !searchOpen) ...widget.children!,
+        ],
+      ),
     );
   }
 }   
